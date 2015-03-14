@@ -1,0 +1,252 @@
+#include "csapp.h"
+
+
+struct online_user{
+    char account[10];
+    int fd;
+    struct online_user *next;
+};
+
+
+struct chat_node{
+    char account1[10];
+    int fd1;
+    char account2[10];
+    int fd2;
+    struct chat_node *next;
+};
+
+struct online_user_list{
+    struct online_user *head,*tail;
+};
+
+struct chat_list{
+    struct chat_node *head,*tail;
+};
+
+void online_user_init(struct online_user_list *list)
+{
+    struct online_user *tmp=(struct online_user *)malloc(sizeof(struct online_user));
+    memcpy(tmp->account," ",strlen(" ")+1);
+    tmp->fd=-1;
+    tmp->next=NULL;
+    list->head=list->tail=tmp;
+}
+
+
+void online_user_add(struct online_user_list *list,const char *account,int fd)
+{
+    struct online_user *tmp=(struct online_user *)malloc(sizeof(struct online_user));
+    memcpy(tmp->account,account,strlen(account)+1);
+    tmp->fd=fd;
+    tmp->next=NULL;
+    list->tail=list->tail->next=tmp;
+}
+
+void printf_online_user(struct online_user_list *list)
+{
+    char buf[MAXLINE];
+    struct online_user *tmp=list->head;
+	if(tmp->next==NULL)
+		printf("no online user\n");
+    while((tmp=tmp->next)!=NULL){
+        sprintf(buf,"%s",tmp->account);
+        printf("%s\n",buf);
+    }
+}
+
+void sent_online_user(struct online_user_list *list,int fd)
+{
+	char buf[MAXLINE];
+	char buf1[MAXLINE];
+	struct online_user *tmp=list->head;
+	sprintf(buf,"online: ");
+    while((tmp=tmp->next)!=NULL){
+    	sprintf(buf1,"%s ",tmp->account);
+		strcat(buf,buf1);
+    }
+	sprintf(buf1,"\n");
+	strcat(buf,buf1);
+	printf("sent:\n %s",buf);
+	rio_writen(fd,buf,strlen(buf));
+}
+
+
+void online_user_rm(struct online_user_list *list,int fd)
+{
+    struct online_user *cur=list->head->next;
+    struct online_user *pre=list->head;
+
+
+    while(cur!=NULL){
+        if(fd==cur->fd){
+            pre->next=cur->next;
+			if(cur==list->tail)
+				list->tail=pre;
+            free(cur);
+            break;
+        }
+        pre=cur;
+        cur=cur->next;
+    }
+}
+
+void chat_list_init(struct chat_list *list)
+{
+    struct chat_node *tmp=(struct chat_node *)malloc(sizeof(struct chat_node));
+    memcpy(tmp->account1," ",strlen(" ")+1);
+    memcpy(tmp->account2," ",strlen(" ")+1);
+    tmp->fd1=-1;
+    tmp->fd2=-1;
+    tmp->next=NULL;
+
+    list->head=list->tail=tmp;
+}
+
+
+
+
+void chat_list_add(struct chat_list *list,const char *account1,int fd1,const char *account2,int fd2)
+{
+    struct chat_node *tmp=(struct chat_node *)malloc(sizeof(struct chat_node));
+    memcpy(tmp->account1,account1,strlen(account1)+1);
+    memcpy(tmp->account2,account2,strlen(account2)+1);
+    tmp->fd1=fd1;
+    tmp->fd2=fd2;
+    tmp->next=NULL;
+    list->tail=list->tail->next=tmp;
+}
+
+void printf_chat_list(struct chat_list *list)
+{
+	char buf[MAXLINE];
+    struct chat_node *tmp=list->head;
+	if(tmp->next==NULL)
+		printf("no chat\n");
+    while((tmp=tmp->next)!=NULL){
+        sprintf(buf,"%s:%d---- %s:%d",tmp->account1,tmp->fd1,tmp->account2,tmp->fd2);
+        printf("%s\n",buf);
+    }
+}
+
+
+
+void chat_list_rm(struct chat_list *list,int fd)
+{
+
+    struct chat_node *cur=list->head->next;
+    struct chat_node *pre=list->head;
+    while(cur!=NULL){
+        if(cur->fd1==fd||cur->fd2==fd){
+            pre->next=cur->next;
+			if(cur==list->tail)
+				list->tail=pre;
+            free(cur);
+            break;
+        }
+        pre=cur;
+        cur=cur->next;
+    }
+}
+
+int is_online(struct online_user_list *list,const char * account)
+{
+
+    struct online_user *cur=list->head->next;
+
+    while(cur!=NULL){
+        if(strcmp(cur->account,account)==0){
+            return 1;
+        }
+        else
+            cur=cur->next;
+    }
+    return 0;
+}
+int find_fd(struct online_user_list *list,const char * account)
+{
+	struct online_user *cur=list->head->next;
+    while(cur!=NULL){
+        if(strcmp(cur->account,account)==0){
+            return cur->fd;
+        }
+        else
+            cur=cur->next;
+    }
+    return -1;
+}
+
+
+
+int find_other_fd(struct chat_list *list,const char *account)
+{
+    struct chat_node *cur=list->head->next;
+    while(cur!=NULL){
+        if(strcmp(cur->account1,account)==0)
+            return cur->fd2;
+        if(strcmp(cur->account2,account)==0)
+            return cur->fd1;
+        cur=cur->next;
+    }
+    return -1;
+
+}
+
+
+
+void sent_message(struct chat_list *list,const char *account,const char *msg)
+{
+
+    printf("reach here\n");
+    char buf[MAXLINE];
+    int fd=find_other_fd(list,account);
+
+    printf("%d %s %s\n",fd,account,msg);
+
+    sprintf(buf,"%s: %s\n",account,msg);
+    rio_writen(fd,buf,strlen(buf));
+}
+
+//int main()
+//{
+//
+//    int fd1,fd2,fd3,fd4;
+//
+//    struct chat_list c_list;
+//    struct online_user_list o_list;
+//
+//    chat_list_init(&c_list);
+//    online_user_init(&o_list);
+//
+//    fd1=open("a1.txt",O_CREAT|O_RDWR|O_APPEND,0);
+//    fd2=open("a2.txt",O_CREAT|O_RDWR|O_APPEND,0);
+//    fd3=open("b1.txt",O_CREAT|O_RDWR|O_APPEND,0);
+//    fd4=open("b2.txt",O_CREAT|O_RDWR|O_APPEND,0);
+//
+//    online_user_add(&o_list,"a1",fd1);
+//    online_user_add(&o_list,"a2",fd2);
+//    online_user_add(&o_list,"b1",fd3);
+//    online_user_add(&o_list,"b2",fd4);
+//
+//    chat_list_add(&c_list,"a1",fd1,"a2",fd2);
+//    chat_list_add(&c_list,"b1",fd3,"b2",fd4);
+//
+//    sent_message(&c_list,"a1","I am a1");
+//    sent_message(&c_list,"a2","I am a2");
+//    sent_message(&c_list,"b1","I am b1");
+//    sent_message(&c_list,"b2","I am b2");
+//
+//    online_user_rm(&o_list,"a1");
+//    online_user_rm(&o_list,"a2");
+//    online_user_rm(&o_list,"b1");
+//    online_user_rm(&o_list,"b2");
+//
+//
+//    chat_list_rm(&c_list,fd1);
+//    chat_list_rm(&c_list,fd3);
+//}
+
+
+
+
+
