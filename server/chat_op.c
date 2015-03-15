@@ -1,28 +1,8 @@
 #include "csapp.h"
+#include "chat_op.h"
+#include "file_operate.h"
 
 
-struct online_user{
-    char account[10];
-    int fd;
-    struct online_user *next;
-};
-
-
-struct chat_node{
-    char account1[10];
-    int fd1;
-    char account2[10];
-    int fd2;
-    struct chat_node *next;
-};
-
-struct online_user_list{
-    struct online_user *head,*tail;
-};
-
-struct chat_list{
-    struct chat_node *head,*tail;
-};
 
 void online_user_init(struct online_user_list *list)
 {
@@ -67,7 +47,7 @@ void sent_online_user(struct online_user_list *list,int fd)
     }
 	sprintf(buf1,"\n");
 	strcat(buf,buf1);
-	printf("sent:\n %s",buf);
+//	printf("sent:\n %s",buf);
 	rio_writen(fd,buf,strlen(buf));
 }
 

@@ -1,28 +1,4 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<sys/types.h>
-#include<sys/stat.h>
-#include<fcntl.h>
-#include<unistd.h>
-#include<string.h>
-#include "csapp.h"
-
-#define OK 1
-#define NO_ACCOUNT 2
-#define PWD_WRONG 3
-
-struct user_info{
-    char account[10];
-    char pwd[20];
-};
-struct user_info_node{
-    struct user_info info;
-    struct user_info_node *next;
-};
-
-struct user_info_list{
-    struct user_info_node *head,*tail;
-};
+#include "file_operate.h"
 
 struct user_info_node *create_node(const char *account,const char *pwd)
 {
